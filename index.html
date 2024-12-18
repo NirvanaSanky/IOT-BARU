@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>WebSocket MQTT</title>
+  <script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
+</head>
+<body>
+  <h1>WebSocket MQTT Client</h1>
+  <button id="connect-btn">Connect to Broker</button>
+  <button id="disconnect-btn" disabled>Disconnect</button>
+  <button id="subscribe-btn" disabled>Subscribe</button>
+  <button id="unsubscribe-btn" disabled>Unsubscribe</button>
+  <button id="publish-btn" disabled>Send Message</button>
+  <p id="status">Status: Not connected</p>
+  <h2>Messages:</h2>
+  <div id="messages" style="border: 1px solid #000; padding: 10px; height: 200px; overflow-y: auto;">
+    <em>No messages received</em>
+  </div>
+  <script>
+    const clientId = 'mqttjs_' + Math.random().toString(16).substr(2, 8);
+    const host = 'ws://broker.emqx.io:8083/mqtt';
+    const topic = 'test/topic';
+  
+    const options = {
+      keepalive: 60,
+      clientId: clientId,
+      protocolId: 'MQTT',
+      protocolVersion: 4,
+      clean: true,
+      reconnectPeriod: 1000,
+      connectTimeout: 30 * 1000,
+    };
+  
+    let client = mqtt.connect(host, options);
+    const ws = new WebSocket('ws://localhost:8080'); // WebSocket ke server.js
+  
+    // Saat WebSocket terhubung
+    ws.addEventListener('open', () => {
+      console.log('WebSocket connected to server.js');
+    });
+  
+    // Saat menerima data dari server.js
+    ws.addEventListener('message', (event) => {
+      const arduinoData = event.data;
+      console.log('Data from server.js:', arduinoData);
+  
+      // Publikasikan data ke broker MQTT
+      if (client.connected) {
+        client.publish(topic, arduinoData, (err) => {
+          if (!err) {
+            console.log(`Data "${arduinoData}" published to topic: ${topic}`);
+            appendMessage(`Published: ${arduinoData}`);
+          } else {
+            console.error('Publish error:', err);
+          }
+        });
+      } else {
+        console.error('MQTT client not connected');
+      }
+    });
+  
+    client.on('connect', () => {
+      console.log('MQTT client connected');
+    });
+  
+    client.on('error', (err) => {
+      console.error('MQTT connection error:', err);
+    });
+  
+    client.on('close', () => {
+      console.log('MQTT client disconnected');
+    });
+  
+    const appendMessage = (message) => {
+      const messageEl = document.createElement('div');
+      messageEl.textContent = message;
+      document.getElementById('messages').appendChild(messageEl);
+    };
+  </script>
+  
