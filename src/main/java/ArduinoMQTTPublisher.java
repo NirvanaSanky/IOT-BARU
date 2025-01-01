@@ -19,10 +19,10 @@ public class ArduinoMQTTPublisher {
         // Konfigurasi MQTT
         String broker = "tcp://broker.hivemq.com:1883"; // Broker MQTT
         String topic = "arduino/dht11";
-        String clientId = "ArduinoJavaPublisher";
 
         try {
-            MqttClient mqttClient = new MqttClient(broker, clientId);
+            // Buat MqttClient tanpa clientId (otomatis dihasilkan)
+            MqttClient mqttClient = new MqttClient(broker, MqttClient.generateClientId());
             mqttClient.connect();
             System.out.println("Terhubung ke broker MQTT.");
 
